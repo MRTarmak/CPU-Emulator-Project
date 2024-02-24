@@ -8,19 +8,40 @@ namespace CPULib
     class stack
     {
     public:
+        // Destructor
+        ~stack()
+        {
+            delete[] arr;
+        }
+
         // Initialization constructor
         stack()
         {
-            arr = (T)malloc(sizeof(T));
+            arr = new T[1];
             len = 0;
         }
 
-        // Copy constructor
-        stack(const T &num)
+        void push(T value)
         {
-            arr[len] = std::copy(num);
+            arr[len] = value;
             len++;
-            arr = (T) realloc(arr, sizeof(T) * len);
+            arr = (T)realloc(arr, sizeof(T) * len);
+        }
+
+        void pop()
+        {
+            len--;
+            arr = (T)realloc(arr, sizeof(T) * len);
+        }
+
+        bool empty()
+        {
+            return len == 0 ? 1 : 0;
+        }
+
+        T top()
+        {
+            return arr[len - 1];
         }
 
     private:
