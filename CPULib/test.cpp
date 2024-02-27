@@ -38,4 +38,8 @@ TEST(CPULibTest, Stack)
     int num = 123;
     stack stack_4(num);
     EXPECT_EQ(stack_4.top(), 123);
+
+    stack stack_5(std::move(stack_4));
+    EXPECT_EQ(stack_5.top(), 123);
+    EXPECT_EQ(stack_4.empty(), 1);
 }
