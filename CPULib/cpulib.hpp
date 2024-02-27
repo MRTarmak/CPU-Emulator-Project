@@ -25,32 +25,63 @@ namespace CPULib
         stack<T> &operator=(const stack<T> &other)
         {
             len = other.len;
-            arr = std::copy(other.arr);
+            delete[] arr;
+            arr = new T[len];
+            for (int i = 0; i < len; i++)
+            {
+                arr[i] = other.arr[i];
+            }
 
             return *this;
         }
 
-        // Copy constructor
+        // Copy constructors
         stack(const stack<T> &other)
         {
-            this = other;
+            len = other.len;
+            arr = new T[len];
+            for (int i = 0; i < len; i++)
+            {
+                arr[i] = other.arr[i];
+            }
+        }
+
+        explicit stack(const T &other)
+        {
+            len = 1;
+            arr = new T[1];
+            arr[0] = other;
         }
 
         // Move assignment operator
         stack<T> &operator=(stack<T> &&other) noexcept
         {
             len = other.len;
-            arr = std::move(other.arr);
+            delete[] arr;
+            arr = other.arr;
+            other.arr = nullptr;
+            other.len = 0;
 
             return *this;
         }
 
-        // Move constructor
+        // Move constructors
         stack(stack<T> &&other) noexcept
         {
-            this = other;
+            len = other.len;
+            arr = other.arr;
+            other.arr = nullptr;
+            other.len = 0;
         }
 
+        explicit stack(T &&other)
+        {
+            len = 1;
+            arr = new T[1];
+            arr[0] = std::move(other);
+        }
+
+        // Class methods
         void push(T value)
         {
             arr[len] = value;
@@ -61,7 +92,8 @@ namespace CPULib
         void pop()
         {
             len--;
-            arr = (T*)realloc(arr, sizeof(T) * len);
+            if (len != 0)
+                arr = (T*)realloc(arr, sizeof(T) * len);
         }
 
         bool empty()
@@ -75,7 +107,7 @@ namespace CPULib
         }
 
     private:
-        T *arr;
-        int len;
+        T *arr = nullptr;
+        int len = 0;
     };
 }
