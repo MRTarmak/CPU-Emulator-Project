@@ -21,22 +21,52 @@ namespace CPULib
             len = 0;
         }
 
+        // Copy assignment operator
+        stack<T> &operator=(const stack<T> &other)
+        {
+            len = other.len;
+            arr = std::copy(other.arr);
+
+            return *this;
+        }
+
+        // Copy constructor
+        stack(const stack<T> &other)
+        {
+            this = other;
+        }
+
+        // Move assignment operator
+        stack<T> &operator=(stack<T> &&other) noexcept
+        {
+            len = other.len;
+            arr = std::move(other.arr);
+
+            return *this;
+        }
+
+        // Move constructor
+        stack(stack<T> &&other) noexcept
+        {
+            this = other;
+        }
+
         void push(T value)
         {
             arr[len] = value;
             len++;
-            arr = (T)realloc(arr, sizeof(T) * len);
+            arr = (T*)realloc(arr, sizeof(T) * len);
         }
 
         void pop()
         {
             len--;
-            arr = (T)realloc(arr, sizeof(T) * len);
+            arr = (T*)realloc(arr, sizeof(T) * len);
         }
 
         bool empty()
         {
-            return len == 0 ? 1 : 0;
+            return len == 0;
         }
 
         T top()
