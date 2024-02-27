@@ -39,6 +39,7 @@ namespace CPULib
         stack(const stack<T> &other)
         {
             len = other.len;
+            delete[] arr;
             arr = new T[len];
             for (int i = 0; i < len; i++)
             {
@@ -69,6 +70,7 @@ namespace CPULib
         stack(stack<T> &&other) noexcept
         {
             len = other.len;
+            delete[] arr;
             arr = other.arr;
             other.arr = nullptr;
             other.len = 0;
