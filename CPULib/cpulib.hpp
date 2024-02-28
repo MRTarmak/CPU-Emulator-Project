@@ -93,9 +93,14 @@ namespace CPULib
 
         void pop()
         {
-            len--;
             if (len != 0)
-                arr = (T*)realloc(arr, sizeof(T) * len);
+            {
+                len--;
+                if (len != 0)
+                    arr[len].~T();
+            }
+            else
+                std::cerr << "Error: Can not pop, stack is empty" << std::endl;
         }
 
         bool empty()

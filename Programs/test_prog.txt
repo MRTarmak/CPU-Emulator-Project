@@ -1,0 +1,4 @@
+BEGIN
+COM1 par1 par2
+COM2 par1
+END

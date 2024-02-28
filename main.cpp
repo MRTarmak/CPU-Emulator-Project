@@ -1,17 +1,25 @@
 #include <iostream>
+#include <fstream>
 #include "CPULib/cpulib.hpp"
 
 using namespace CPULib;
 
 int main()
 {
-    stack<int> s;
-    int n = 10;
-    std::cout << s.empty() << std::endl;
-    s.push(n);
-    std::cout << s.top() << std::endl;
-    s.pop();
-    std::cout << s.empty() << std::endl;
+    std::string path;
+    std::cout << "Enter path: ";
+    std::cin >> path;
+
+    std::ifstream file;
+    file.open(path);
+    if (!file.is_open())
+        std::cerr << "Error: can not open a file with this path" << std::endl;
+
+    std::string command;
+    while (file >> command)
+    {
+        std::cout << command << std::endl;
+    }
 
     return 0;
 }

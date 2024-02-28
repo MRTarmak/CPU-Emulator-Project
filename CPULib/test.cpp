@@ -14,6 +14,8 @@ TEST(CPULibTest, Stack)
     stack_1.pop();
     EXPECT_EQ(stack_1.empty(), 1);
 
+    stack_1.pop();
+
     stack_1.push(2);
     stack_1.push(3);
     EXPECT_EQ(stack_1.top(), 3);
