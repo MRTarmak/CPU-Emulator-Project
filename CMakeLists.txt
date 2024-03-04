@@ -5,7 +5,7 @@ project(CPUEmulator)
 
 add_subdirectory("CPULib")
 
-include_directories(CPULib)
+include_directories(CPULib Programs)
 
 add_executable(main main.cpp)
 
