@@ -140,16 +140,6 @@ namespace CPULib
             path = "../" + path;
 
             std::ifstream file;
-
-//            try
-//            {
-//                file.open(path);
-//            }
-//            catch (const std::exception &ex)
-//            {
-//                std::cerr << ex.what() << std::endl;
-//            }
-
             file.open(path);
             if (!file.is_open())
             {
@@ -199,35 +189,65 @@ namespace CPULib
                     PC++;
                 }
                 else if (command == "JMP" || command == "JEQ" || command == "JNE" || command == "JA" ||
-                command == "JAE" || command == "JB" || command == "JBE" || command == "CALL")
+                command == "JAE" || command == "JB" || command == "JBE")
                 {
                     program.push_back(command);
                     PC++;
                     file >> command;
-                    int length = command.length();
-                    if (command[length - 1] == ':')
-                    {
-                        labels.push_back(command);
-                        label_ind.push_back(PC + 1);
-                    }
+                    PC++;
+                }
+                else if (command == "CALL")
+                {
+                    program.push_back(command);
+                    PC++;
+                    file >> command;
+                    command.push_back('@');
+                    labels.push_back(command);
+                    label_ind.push_back(PC + 1);
+                    labels_count++;
+                    PC++;
                 }
                 else
                 {
-                    std::cerr << "Error: Unknown command" << std::endl;
+                    if (command.back() == ':')
+                    {
+                        command.pop_back();
+                        labels.push_back(command);
+                        label_ind.push_back(PC + 1);
+                        labels_count++;
+                    }
+                    else
+                    {
+                        std::cerr << "Error: Unknown command" << std::endl;
+                        exit(EXIT_FAILURE);
+                    }
                 }
             }
         }
 
         void start()
         {
-            if (program[0] != "BEGIN")
-                std::cerr << "Error: Program must start with BEGIN command" << std::endl;
-            if (program[PC] != "END")
-                std::cerr << "Error: Program must end with END command" << std::endl;
+            get_program();
+            int end = PC;
+            PC = 0;
+            while (program[PC] != "BEGIN")
+            {
+                if (program[PC] == "END" || PC == end)
+                {
+                    std::cerr << "Error: Program must have a BEGIN command" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
+                PC++;
+            }
+            PC++;
 
-            PC = 1;
             while (program[PC] != "END")
             {
+                if (PC == end)
+                {
+                    std::cerr << "Error: Program must have an END command" << std::endl;
+                    exit(EXIT_FAILURE);
+                }
                 if (program[PC] == "PUSH")
                 {
                     PC++;
@@ -377,6 +397,130 @@ namespace CPULib
                     cpu_stack.push(in);
                     PC++;
                 }
+                else if (program[PC] == "JMP")
+                {
+                    PC++;
+                    bool not_found = true;
+                    for (int i = 0; i < labels_count; i++)
+                    {
+                        if (program[PC] == labels[i])
+                        {
+                            PC = label_ind[i];
+                            not_found = false;
+                            break;
+                        }
+                    }
+                    if (not_found)
+                    {
+                        std::cerr << "Error: label is not fount" << std::endl;
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                else if (program[PC] == "JEQ")
+                {
+                    OP = cpu_stack.top();
+                    cpu_stack.pop();
+                    if (OP == cpu_stack.top())
+                    {
+                        program[PC] = "JMP";
+                    }
+                    else
+                        PC++;
+                    cpu_stack.push(OP);
+                }
+                else if (program[PC] == "JNE")
+                {
+                    OP = cpu_stack.top();
+                    cpu_stack.pop();
+                    if (OP != cpu_stack.top())
+                    {
+                        program[PC] = "JMP";
+                    }
+                    else
+                        PC++;
+                    cpu_stack.push(OP);
+                }
+                else if (program[PC] == "JA")
+                {
+                    OP = cpu_stack.top();
+                    cpu_stack.pop();
+                    if (OP > cpu_stack.top())
+                    {
+                        program[PC] = "JMP";
+                    }
+                    else
+                        PC++;
+                    cpu_stack.push(OP);
+                }
+                else if (program[PC] == "JAE")
+                {
+                    OP = cpu_stack.top();
+                    cpu_stack.pop();
+                    if (OP >= cpu_stack.top())
+                    {
+                        program[PC] = "JMP";
+                    }
+                    else
+                        PC++;
+                    cpu_stack.push(OP);
+                }
+                else if (program[PC] == "JB")
+                {
+                    OP = cpu_stack.top();
+                    cpu_stack.pop();
+                    if (OP < cpu_stack.top())
+                    {
+                        program[PC] = "JMP";
+                    }
+                    else
+                        PC++;
+                    cpu_stack.push(OP);
+                }
+                else if (program[PC] == "JBE")
+                {
+                    OP = cpu_stack.top();
+                    cpu_stack.pop();
+                    if (OP <= cpu_stack.top())
+                    {
+                        program[PC] = "JMP";
+                    }
+                    else
+                        PC++;
+                    cpu_stack.push(OP);
+                }
+                else if (program[PC] == "CALL")
+                {
+                    PC++;
+                    bool not_found = true;
+                    for (int i = 0; i < labels_count; i++)
+                    {
+                        if (program[PC] == labels[i])
+                        {
+                            PC = label_ind[i];
+                            program[PC].push_back('@');
+                            func.push(program[PC]);
+                            not_found = false;
+                            break;
+                        }
+                    }
+                    if (not_found)
+                    {
+                        std::cerr << "Error: label is not fount" << std::endl;
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                else if (program[PC] == "RET")
+                {
+                    for (int i = 0; i < labels_count; i++)
+                    {
+                        if (func.top() == labels[i])
+                        {
+                            PC = label_ind[i];
+                            func.pop();
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -385,6 +529,8 @@ namespace CPULib
         std::vector<std::string> program;
         std::vector<std::string> labels;
         std::vector<int> label_ind;
+        int labels_count = 0;
+        stack<std::string> func;
         // Registers
         T AX;
         bool AX_e = true;
@@ -396,6 +542,6 @@ namespace CPULib
         bool DX_e = true;
         T OP; // Operation register
         T RX; // Result register
-        T PC = -1;
+        int PC = -1;
     };
 }
