@@ -81,10 +81,10 @@ namespace CPULib
         // Class methods
         void push(const T &value)
         {
+            if (len == capacity)
+                resize(len);
             arr[len] = value;
             len++;
-            if (len > capacity)
-                resize(len);
         }
 
         void pop()
@@ -108,6 +108,16 @@ namespace CPULib
                 return arr[len - 1];
             else
                 std::cerr << "Error: Can not get top value, stack is empty" << std::endl;
+        }
+
+        int get_len()
+        {
+            return len;
+        }
+
+        void set_len(int new_len)
+        {
+            len = new_len;
         }
 
     private:
@@ -189,22 +199,12 @@ namespace CPULib
                     PC++;
                 }
                 else if (command == "JMP" || command == "JEQ" || command == "JNE" || command == "JA" ||
-                command == "JAE" || command == "JB" || command == "JBE")
+                command == "JAE" || command == "JB" || command == "JBE" || command == "CALL")
                 {
                     program.push_back(command);
                     PC++;
                     file >> command;
-                    PC++;
-                }
-                else if (command == "CALL")
-                {
                     program.push_back(command);
-                    PC++;
-                    file >> command;
-                    command.push_back('@');
-                    labels.push_back(command);
-                    label_ind.push_back(PC + 1);
-                    labels_count++;
                     PC++;
                 }
                 else
@@ -422,7 +422,22 @@ namespace CPULib
                     cpu_stack.pop();
                     if (OP == cpu_stack.top())
                     {
-                        program[PC] = "JMP";
+                        PC++;
+                        bool not_found = true;
+                        for (int i = 0; i < labels_count; i++)
+                        {
+                            if (program[PC] == labels[i])
+                            {
+                                PC = label_ind[i];
+                                not_found = false;
+                                break;
+                            }
+                        }
+                        if (not_found)
+                        {
+                            std::cerr << "Error: label is not fount" << std::endl;
+                            exit(EXIT_FAILURE);
+                        }
                     }
                     else
                         PC++;
@@ -434,7 +449,22 @@ namespace CPULib
                     cpu_stack.pop();
                     if (OP != cpu_stack.top())
                     {
-                        program[PC] = "JMP";
+                        PC++;
+                        bool not_found = true;
+                        for (int i = 0; i < labels_count; i++)
+                        {
+                            if (program[PC] == labels[i])
+                            {
+                                PC = label_ind[i];
+                                not_found = false;
+                                break;
+                            }
+                        }
+                        if (not_found)
+                        {
+                            std::cerr << "Error: label is not fount" << std::endl;
+                            exit(EXIT_FAILURE);
+                        }
                     }
                     else
                         PC++;
@@ -446,7 +476,22 @@ namespace CPULib
                     cpu_stack.pop();
                     if (OP > cpu_stack.top())
                     {
-                        program[PC] = "JMP";
+                        PC++;
+                        bool not_found = true;
+                        for (int i = 0; i < labels_count; i++)
+                        {
+                            if (program[PC] == labels[i])
+                            {
+                                PC = label_ind[i];
+                                not_found = false;
+                                break;
+                            }
+                        }
+                        if (not_found)
+                        {
+                            std::cerr << "Error: label is not fount" << std::endl;
+                            exit(EXIT_FAILURE);
+                        }
                     }
                     else
                         PC++;
@@ -458,7 +503,22 @@ namespace CPULib
                     cpu_stack.pop();
                     if (OP >= cpu_stack.top())
                     {
-                        program[PC] = "JMP";
+                        PC++;
+                        bool not_found = true;
+                        for (int i = 0; i < labels_count; i++)
+                        {
+                            if (program[PC] == labels[i])
+                            {
+                                PC = label_ind[i];
+                                not_found = false;
+                                break;
+                            }
+                        }
+                        if (not_found)
+                        {
+                            std::cerr << "Error: label is not fount" << std::endl;
+                            exit(EXIT_FAILURE);
+                        }
                     }
                     else
                         PC++;
@@ -470,7 +530,22 @@ namespace CPULib
                     cpu_stack.pop();
                     if (OP < cpu_stack.top())
                     {
-                        program[PC] = "JMP";
+                        PC++;
+                        bool not_found = true;
+                        for (int i = 0; i < labels_count; i++)
+                        {
+                            if (program[PC] == labels[i])
+                            {
+                                PC = label_ind[i];
+                                not_found = false;
+                                break;
+                            }
+                        }
+                        if (not_found)
+                        {
+                            std::cerr << "Error: label is not fount" << std::endl;
+                            exit(EXIT_FAILURE);
+                        }
                     }
                     else
                         PC++;
@@ -482,7 +557,22 @@ namespace CPULib
                     cpu_stack.pop();
                     if (OP <= cpu_stack.top())
                     {
-                        program[PC] = "JMP";
+                        PC++;
+                        bool not_found = true;
+                        for (int i = 0; i < labels_count; i++)
+                        {
+                            if (program[PC] == labels[i])
+                            {
+                                PC = label_ind[i];
+                                not_found = false;
+                                break;
+                            }
+                        }
+                        if (not_found)
+                        {
+                            std::cerr << "Error: label is not fount" << std::endl;
+                            exit(EXIT_FAILURE);
+                        }
                     }
                     else
                         PC++;
@@ -496,9 +586,17 @@ namespace CPULib
                     {
                         if (program[PC] == labels[i])
                         {
-                            PC = label_ind[i];
                             program[PC].push_back('@');
+
+                            labels.push_back(program[PC]);
+                            label_ind.push_back(PC + 1);
+                            labels_count++;
+
                             func.push(program[PC]);
+                            PC = label_ind[i];
+
+                            BP = cpu_stack.get_len();
+
                             not_found = false;
                             break;
                         }
@@ -517,9 +615,15 @@ namespace CPULib
                         {
                             PC = label_ind[i];
                             func.pop();
+                            if (cpu_stack.get_len() > BP)
+                                cpu_stack.set_len(BP);
                             break;
                         }
                     }
+                }
+                else
+                {
+                    PC++;
                 }
             }
         }
@@ -542,6 +646,7 @@ namespace CPULib
         bool DX_e = true;
         T OP; // Operation register
         T RX; // Result register
-        int PC = -1;
+        int PC = -1; // Program Counter register
+        int BP = 0; // Base Pointer register
     };
 }

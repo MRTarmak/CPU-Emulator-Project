@@ -1,9 +1,9 @@
 BEGIN
-PUSH 1
+PUSH 0
 PUSH 1
 
 PUSH 1
-PUSH 40
+PUSH 41
 
 while:
 POPR AX
