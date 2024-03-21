@@ -22,6 +22,11 @@ int main()
         {
             cpu_1.start();
         }
+        else
+        {
+            std::cout << "Unknown command" << std::endl;
+            continue;
+        }
     }
 
     return 0;
