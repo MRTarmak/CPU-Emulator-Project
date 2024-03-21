@@ -157,6 +157,8 @@ namespace CPULib
                 mem.mem_stack.pop();
                 if (mem.registers[static_cast<int>(RegisterName::OP)] == mem.mem_stack.top())
                     PC = static_cast<int>(label);
+                else
+                    PC++;
                 mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
             }
             else if (arg == static_cast<T>(CommandName::JNE))
@@ -165,6 +167,8 @@ namespace CPULib
                 mem.mem_stack.pop();
                 if (mem.registers[static_cast<int>(RegisterName::OP)] != mem.mem_stack.top())
                     PC = static_cast<int>(label);
+                else
+                    PC++;
                 mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
             }
             else if (arg == static_cast<T>(CommandName::JA))
@@ -173,6 +177,8 @@ namespace CPULib
                 mem.mem_stack.pop();
                 if (mem.registers[static_cast<int>(RegisterName::OP)] > mem.mem_stack.top())
                     PC = static_cast<int>(label);
+                else
+                    PC++;
                 mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
             }
             else if (arg == static_cast<T>(CommandName::JAE))
@@ -181,6 +187,8 @@ namespace CPULib
                 mem.mem_stack.pop();
                 if (mem.registers[static_cast<int>(RegisterName::OP)] >= mem.mem_stack.top())
                     PC = static_cast<int>(label);
+                else
+                    PC++;
                 mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
             }
             else if (arg == static_cast<T>(CommandName::JB))
@@ -189,6 +197,8 @@ namespace CPULib
                 mem.mem_stack.pop();
                 if (mem.registers[static_cast<int>(RegisterName::OP)] < mem.mem_stack.top())
                     PC = static_cast<int>(label);
+                else
+                    PC++;
                 mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
             }
             else if (arg == static_cast<T>(CommandName::JBE))
@@ -197,6 +207,8 @@ namespace CPULib
                 mem.mem_stack.pop();
                 if (mem.registers[static_cast<int>(RegisterName::OP)] <= mem.mem_stack.top())
                     PC = static_cast<int>(label);
+                else
+                    PC++;
                 mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
             }
             else if (arg == static_cast<T>(CommandName::CALL))
@@ -224,10 +236,14 @@ namespace CPULib
     class cpu : parser
     {
     public:
-        void start()
+        void launch_parser()
         {
             parse();
+            std::cout << "Parsed successfully" << std::endl;
+        }
 
+        void start()
+        {
             int end = PC;
             PC = 0;
             while (program[PC][0] != static_cast<size_t>(CommandName::BEGIN)) // Begin find

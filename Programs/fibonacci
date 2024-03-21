@@ -1,0 +1,28 @@
+BEGIN
+PUSH 0
+PUSH 1
+
+PUSH 1
+PUSH 41
+
+while:
+    POPR AX
+    POPR BX
+
+    ADD
+    POPR CX
+    POPR DX
+    OUT
+    PUSHR DX
+    PUSHR CX
+
+    PUSHR BX
+    PUSHR AX
+    SUB
+    POPR AX
+    POP
+    PUSHR AX
+
+    JNE while
+
+END

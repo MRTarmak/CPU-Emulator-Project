@@ -1,0 +1,27 @@
+BEGIN
+PUSH 1
+IN
+
+MUL
+POPR AX
+SUB
+POPR BX
+POP
+PUSHR BX
+
+while:
+    PUSHR AX
+    MUL
+    POPR AX
+    POP
+    SUB
+    POPR BX
+    POP
+    PUSHR BX
+
+    JNE while
+
+PUSHR AX
+OUT
+
+END

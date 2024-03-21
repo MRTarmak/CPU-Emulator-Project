@@ -184,7 +184,8 @@ namespace CPULib
                 if (program[i][0] >= 113 && program[i][0] <= 120)
                 {
                     bool not_found = true;
-                    for (int j = 0; j < labels.size(); j++)
+                    int size = static_cast<int>(labels.size());
+                    for (int j = 0; j < size; j++)
                     {
                         if (labels[program[i][1]] == labels[j] && labels_ind[j] != -1)
                         {
@@ -205,8 +206,25 @@ namespace CPULib
 
         void parse()
         {
+            program.clear();
+            labels.clear();
+            labels_ind.clear();
+            PC = -1;
+
             get_program();
             change_labels();
+
+            std::ofstream byte_code_file;
+            byte_code_file.open("../byte_code");
+            int prg_len = static_cast<int>(program.size());
+            for (int i = 0; i < prg_len; i++)
+            {
+                byte_code_file << program[i][0] << ' ';
+                if (program[i].size() == 2)
+                    byte_code_file << program[i][1];
+                byte_code_file << std::endl;
+            }
+            byte_code_file.close();
         }
 
     protected:
