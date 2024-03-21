@@ -2,3 +2,4 @@ cmake-build-debug-coverage
 cmake-build-debug
 .idea
 .vscode
+byte_code
