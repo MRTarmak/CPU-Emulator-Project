@@ -1,238 +1,238 @@
 #pragma once
 
 #include <iostream>
-#include <vector>
-#include <fstream>
+#include <stacklib.hpp>
+#include <parserlib.hpp>
 
 namespace CPULib
 {
-    template<class T>
-    class stack
+    enum class CommandName
     {
-    public:
-        // Destructor
-        ~stack()
+        BEGIN = 11,
+        END,
+        PUSH,
+        POP,
+        PUSHR,
+        POPR,
+        ADD,
+        SUB,
+        MUL,
+        DIV = 110,
+        OUT,
+        IN,
+        JMP,
+        JEQ,
+        JNE,
+        JA,
+        JAE,
+        JB,
+        JBE,
+        CALL,
+        RET
+    };
+
+    enum class RegisterName
+    {
+        OP = 4,
+        RX,
+        BP
+    };
+
+    template <class T>
+    struct memory
+    {
+        stack<T> mem_stack;
+        stack<size_t> function;
+        std::vector<T> registers = {0, 0, 0, 0, 0, 0, 0};
+        std::vector<bool> reg_f = {false, false, false, false};
+    };
+
+    template <class T>
+    struct command
+    {
+        virtual void run(memory<T>&){};
+        virtual void run(memory<T>&, T&){};
+        virtual void run(memory<T>&, T&, T&){};
+        virtual void run(memory<T>&, T&, T&, int&){};
+        virtual void run(memory<T>&, int&){};
+    };
+
+    template <class T>
+    struct PUSH : command<T>
+    {
+        void run(memory<T> &mem, T &arg) override
         {
-            delete[] arr;
-        }
-
-        // Initialization constructor
-        stack()
-        {
-            arr = new T[1];
-            len = 0;
-            capacity = 0;
-        }
-
-        // Copy constructors
-        stack(const stack<T> &other)
-        {
-            *this = other;
-        }
-
-        explicit stack(const T &other)
-        {
-            len = 1;
-            capacity = 1;
-            arr = new T[1];
-            arr[0] = other;
-        }
-
-        // Move constructors
-        stack(stack<T> &&other) noexcept
-        {
-            *this = std::move(other);
-        }
-
-        explicit stack(T &&other)
-        {
-            len = 1;
-            capacity = 1;
-            arr = new T[1];
-            arr[0] = std::move(other);
-        }
-
-        // Copy assignment operator
-        stack<T> &operator=(const stack<T> &other)
-        {
-            len = other.len;
-            capacity = other.capacity;
-            arr = new T[len];
-            for (int i = 0; i < len; i++)
-            {
-                arr[i] = other.arr[i];
-            }
-
-            return *this;
-        }
-
-        // Move assignment operator
-        stack<T> &operator=(stack<T> &&other) noexcept
-        {
-            len = other.len;
-            capacity = other.capacity;
-            arr = other.arr;
-            other.arr = nullptr;
-            other.len = 0;
-
-            return *this;
-        }
-
-        // Class methods
-        void push(const T &value)
-        {
-            if (len == capacity)
-                resize(len);
-            arr[len] = value;
-            len++;
-        }
-
-        void pop()
-        {
-            if (len != 0)
-            {
-                len--;
-            }
-            else
-                std::cerr << "Error: Can not pop, stack is empty" << std::endl;
-        }
-
-        bool empty()
-        {
-            return len == 0;
-        }
-
-        T &top()
-        {
-            if (len != 0)
-                return arr[len - 1];
-            else
-                std::cerr << "Error: Can not get top value, stack is empty" << std::endl;
-        }
-
-        int get_len()
-        {
-            return len;
-        }
-
-        void set_len(int new_len)
-        {
-            len = new_len;
-        }
-
-    private:
-        T *arr = nullptr;
-        int len = 0;
-        size_t capacity = 0;
-
-        void resize(size_t size)
-        {
-            auto new_arr = new T[size];
-            for (int i = 0; i < len; i++)
-            {
-                new_arr[i] = std::move(arr[i]);
-            }
-            delete[] arr;
-            arr = new_arr;
-            capacity = size;
+            mem.mem_stack.push(arg);
         }
     };
 
-    template<class T>
-    class cpu
+    template <class T>
+    struct POP : command<T>
     {
-    public:
-        void get_program()
+        void run(memory<T> &mem) override
         {
-            std::string path;
-            std::cout << "Enter path: ";
-            std::cin >> path;
-            path = "../" + path;
+            mem.mem_stack.pop();
+        }
+    };
 
-            std::ifstream file;
-            file.open(path);
-            if (!file.is_open())
+    template <class T>
+    struct PUSHR_POPR : command<T>
+    {
+        void run(memory<T> &mem, T &arg, T &index) override
+        {
+            if (arg == static_cast<T>(CommandName::PUSHR))
             {
-                std::cerr << "Error: Can not open a file with given path" << std::endl;
-                exit(EXIT_FAILURE);
-            }
-
-            std::string command;
-            while (file >> command)
-            {
-                if (command == "BEGIN" || command == "END" || command == "POP" ||
-                command == "ADD" || command == "SUB" || command == "MUL" ||
-                command == "DIV" || command == "OUT" || command == "IN" ||
-                command == "RET")
+                if (!mem.reg_f[index])
                 {
-                    program.push_back(command);
-                    PC++;
-                }
-                else if (command == "PUSH")
-                {
-                    program.push_back(command);
-                    PC++;
-                    file >> command;
-                    int length = command.length();
-                    for (int i = 0; i < length; i++)
-                    {
-                        if (command[i] < '0' | command[i] > '9')
-                        {
-                            std::cerr << "Error: value0 must be a number" << std::endl;
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    program.push_back(command);
-                    PC++;
-                }
-                else if (command == "PUSHR" || command == "POPR")
-                {
-                    program.push_back(command);
-                    PC++;
-                    file >> command;
-                    if (command != "AX" && command != "BX" && command != "CX" && command != "DX")
-                    {
-                        std::cerr << "Error: Unknown register name" << std::endl;
-                        exit(EXIT_FAILURE);
-                    }
-                    program.push_back(command);
-                    PC++;
-                }
-                else if (command == "JMP" || command == "JEQ" || command == "JNE" || command == "JA" ||
-                command == "JAE" || command == "JB" || command == "JBE" || command == "CALL")
-                {
-                    program.push_back(command);
-                    PC++;
-                    file >> command;
-                    program.push_back(command);
-                    PC++;
+                    std::cerr << "Error: Register is empty" << std::endl;
+                    exit(EXIT_FAILURE);
                 }
                 else
                 {
-                    if (command.back() == ':')
-                    {
-                        command.pop_back();
-                        labels.push_back(command);
-                        label_ind.push_back(PC + 1);
-                        labels_count++;
-                    }
-                    else
-                    {
-                        std::cerr << "Error: Unknown command" << std::endl;
-                        exit(EXIT_FAILURE);
-                    }
+                    mem.mem_stack.push(mem.registers[index]);
+                    mem.reg_f[index] = false;
                 }
             }
+            else
+            {
+                mem.registers[index] = mem.mem_stack.top();
+                mem.reg_f[index] = true;
+                mem.mem_stack.pop();
+            }
         }
+    };
 
+    template <class T>
+    struct OPERATION : command<T>
+    {
+        void run(memory<T> &mem, T &arg) override
+        {
+            mem.registers[static_cast<int>(RegisterName::OP)] = mem.mem_stack.top();
+            mem.mem_stack.pop();
+            if (arg == static_cast<T>(CommandName::ADD))
+                mem.registers[static_cast<int>(RegisterName::RX)] = mem.registers[static_cast<int>(RegisterName::OP)] + mem.mem_stack.top();
+            else if (arg == static_cast<T>(CommandName::SUB))
+                mem.registers[static_cast<int>(RegisterName::RX)] = mem.registers[static_cast<int>(RegisterName::OP)] - mem.mem_stack.top();
+            else if (arg == static_cast<T>(CommandName::MUL))
+                mem.registers[static_cast<int>(RegisterName::RX)] = mem.registers[static_cast<int>(RegisterName::OP)] * mem.mem_stack.top();
+            else if (arg == static_cast<T>(CommandName::DIV))
+                mem.registers[static_cast<int>(RegisterName::RX)] = mem.registers[static_cast<int>(RegisterName::OP)] / mem.mem_stack.top();
+
+            mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
+            mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::RX)]);
+        }
+    };
+
+    template <class T>
+    struct OUT_IN : command<T>
+    {
+        void run(memory<T> &mem, T &arg) override
+        {
+            if (arg == static_cast<T>(CommandName::OUT))
+            {
+                std::cout << mem.mem_stack.top() << std::endl;
+                mem.mem_stack.pop();
+            }
+            else
+            {
+                T in;
+                std::cin >> in;
+                mem.mem_stack.push(in);
+            }
+        }
+    };
+
+    template <class T>
+    struct JMP : command<T>
+    {
+        void run(memory<T> &mem, T &arg, T &label, int &PC) override
+        {
+            if (arg == static_cast<T>(CommandName::JMP))
+            {
+                PC = static_cast<int>(label);
+            }
+            else if (arg == static_cast<T>(CommandName::JEQ))
+            {
+                mem.registers[static_cast<int>(RegisterName::OP)] = mem.mem_stack.top();
+                mem.mem_stack.pop();
+                if (mem.registers[static_cast<int>(RegisterName::OP)] == mem.mem_stack.top())
+                    PC = static_cast<int>(label);
+                mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
+            }
+            else if (arg == static_cast<T>(CommandName::JNE))
+            {
+                mem.registers[static_cast<int>(RegisterName::OP)] = mem.mem_stack.top();
+                mem.mem_stack.pop();
+                if (mem.registers[static_cast<int>(RegisterName::OP)] != mem.mem_stack.top())
+                    PC = static_cast<int>(label);
+                mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
+            }
+            else if (arg == static_cast<T>(CommandName::JA))
+            {
+                mem.registers[static_cast<int>(RegisterName::OP)] = mem.mem_stack.top();
+                mem.mem_stack.pop();
+                if (mem.registers[static_cast<int>(RegisterName::OP)] > mem.mem_stack.top())
+                    PC = static_cast<int>(label);
+                mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
+            }
+            else if (arg == static_cast<T>(CommandName::JAE))
+            {
+                mem.registers[static_cast<int>(RegisterName::OP)] = mem.mem_stack.top();
+                mem.mem_stack.pop();
+                if (mem.registers[static_cast<int>(RegisterName::OP)] >= mem.mem_stack.top())
+                    PC = static_cast<int>(label);
+                mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
+            }
+            else if (arg == static_cast<T>(CommandName::JB))
+            {
+                mem.registers[static_cast<int>(RegisterName::OP)] = mem.mem_stack.top();
+                mem.mem_stack.pop();
+                if (mem.registers[static_cast<int>(RegisterName::OP)] < mem.mem_stack.top())
+                    PC = static_cast<int>(label);
+                mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
+            }
+            else if (arg == static_cast<T>(CommandName::JBE))
+            {
+                mem.registers[static_cast<int>(RegisterName::OP)] = mem.mem_stack.top();
+                mem.mem_stack.pop();
+                if (mem.registers[static_cast<int>(RegisterName::OP)] <= mem.mem_stack.top())
+                    PC = static_cast<int>(label);
+                mem.mem_stack.push(mem.registers[static_cast<int>(RegisterName::OP)]);
+            }
+            else if (arg == static_cast<T>(CommandName::CALL))
+            {
+                mem.function.push(PC + 1);
+                PC = static_cast<int>(label);
+                mem.registers[static_cast<int>(RegisterName::BP)] = mem.mem_stack.get_len();
+            }
+        }
+    };
+
+    template <class T>
+    struct RET : command<T>
+    {
+        void run(memory<T> &mem, int &PC) override
+        {
+            PC = mem.function.top();
+            mem.function.pop();
+            if (mem.mem_stack.get_len() > mem.registers[static_cast<int>(RegisterName::BP)])
+                mem.mem_stack.set_len(mem.registers[static_cast<int>(RegisterName::BP)]);
+        }
+    };
+
+    template <class T>
+    class cpu : parser
+    {
+    public:
         void start()
         {
-            get_program();
+            parse();
+
             int end = PC;
             PC = 0;
-            while (program[PC] != "BEGIN")
+            while (program[PC][0] != static_cast<size_t>(CommandName::BEGIN)) // Begin find
             {
-                if (program[PC] == "END" || PC == end)
+                if (program[PC][0] == static_cast<size_t>(CommandName::END) || PC == end)
                 {
                     std::cerr << "Error: Program must have a BEGIN command" << std::endl;
                     exit(EXIT_FAILURE);
@@ -241,385 +241,56 @@ namespace CPULib
             }
             PC++;
 
-            while (program[PC] != "END")
+            while (program[PC][0] != static_cast<size_t>(CommandName::END))
             {
                 if (PC == end)
                 {
                     std::cerr << "Error: Program must have an END command" << std::endl;
                     exit(EXIT_FAILURE);
                 }
-                if (program[PC] == "PUSH")
+                if (program[PC][0] == static_cast<size_t>(CommandName::PUSH))
                 {
-                    PC++;
-                    T number = 0;
-                    int length = program[PC].length();
-                    for (int i = 0; i < length; i++)
-                    {
-                        number *= 10;
-                        number += (program[PC][i] - '0');
-                    }
-                    cpu_stack.push(number);
+                    PUSH<T> command;
+                    command.run(mem, program[PC][1]);
                     PC++;
                 }
-                else if (program[PC] == "POP")
+                else if (program[PC][0] == static_cast<size_t>(CommandName::POP))
                 {
-                    cpu_stack.pop();
+                    POP<T> command;
+                    command.run(mem);
                     PC++;
                 }
-                else if (program[PC] == "PUSHR")
+                else if (program[PC][0] == static_cast<size_t>(CommandName::PUSHR) || program[PC][0] == static_cast<size_t>(CommandName::POPR))
                 {
-                    PC++;
-                    if (program[PC] == "AX")
-                    {
-                        if (AX_e)
-                        {
-                            std::cerr << "Error: Register is empty" << std::endl;
-                        }
-                        else
-                        {
-                            cpu_stack.push(AX);
-                            AX_e = true;
-                        }
-                    }
-                    else if (program[PC] == "BX")
-                    {
-                        if (BX_e)
-                        {
-                            std::cerr << "Error: Register is empty" << std::endl;
-                        }
-                        else
-                        {
-                            cpu_stack.push(BX);
-                            BX_e = true;
-                        }
-                    }
-                    else if (program[PC] == "CX")
-                    {
-                        if (CX_e)
-                        {
-                            std::cerr << "Error: Register is empty" << std::endl;
-                        }
-                        else
-                        {
-                            cpu_stack.push(CX);
-                            CX_e = true;
-                        }
-                    }
-                    else if (program[PC] == "DX")
-                    {
-                        if (DX_e)
-                        {
-                            std::cerr << "Error: Register is empty" << std::endl;
-                        }
-                        else
-                        {
-                            cpu_stack.push(DX);
-                            DX_e = true;
-                        }
-                    }
+                    PUSHR_POPR<T> command;
+                    command.run(mem, program[PC][0], program[PC][1]);
                     PC++;
                 }
-                else if (program[PC] == "POPR")
+                else if (program[PC][0] == static_cast<size_t>(CommandName::ADD) || program[PC][0] == static_cast<size_t>(CommandName::SUB) ||
+                         program[PC][0] == static_cast<size_t>(CommandName::MUL) || program[PC][0] == static_cast<size_t>(CommandName::DIV))
                 {
-                    PC++;
-                    if (program[PC] == "AX")
-                    {
-                        AX = cpu_stack.top();
-                        AX_e = false;
-                        cpu_stack.pop();
-                    }
-                    else if (program[PC] == "BX")
-                    {
-                        BX = cpu_stack.top();
-                        BX_e = false;
-                        cpu_stack.pop();
-                    }
-                    else if (program[PC] == "CX")
-                    {
-                        CX = cpu_stack.top();
-                        CX_e = false;
-                        cpu_stack.pop();
-                    }
-                    else if (program[PC] == "DX")
-                    {
-                        DX = cpu_stack.top();
-                        DX_e = false;
-                        cpu_stack.pop();
-                    }
+                    OPERATION<T> command;
+                    command.run(mem, program[PC][0]);
                     PC++;
                 }
-                else if (program[PC] == "ADD")
+                else if (program[PC][0] == static_cast<size_t>(CommandName::OUT) || program[PC][0] == static_cast<size_t>(CommandName::IN))
                 {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    RX = OP + cpu_stack.top();
-                    cpu_stack.push(OP);
-                    cpu_stack.push(RX);
+                    OUT_IN<T> command;
+                    command.run(mem, program[PC][0]);
                     PC++;
                 }
-                else if (program[PC] == "SUB")
+                else if (program[PC][0] == static_cast<size_t>(CommandName::JMP) || program[PC][0] == static_cast<size_t>(CommandName::JEQ) ||
+                         program[PC][0] == static_cast<size_t>(CommandName::JNE) || program[PC][0] == static_cast<size_t>(CommandName::JA) ||
+                         program[PC][0] == static_cast<size_t>(CommandName::JAE) || program[PC][0] == static_cast<size_t>(CommandName::JB) ||
+                         program[PC][0] == static_cast<size_t>(CommandName::JBE) || program[PC][0] == static_cast<size_t>(CommandName::CALL))
                 {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    RX = OP - cpu_stack.top();
-                    cpu_stack.push(OP);
-                    cpu_stack.push(RX);
-                    PC++;
+                    JMP<T> command;
+                    command.run(mem, program[PC][0], program[PC][1], PC);
                 }
-                else if (program[PC] == "MUL")
+                else if (program[PC][0] == static_cast<size_t>(CommandName::RET))
                 {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    RX = OP * cpu_stack.top();
-                    cpu_stack.push(OP);
-                    cpu_stack.push(RX);
-                    PC++;
-                }
-                else if (program[PC] == "DIV")
-                {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    RX = OP * cpu_stack.top();
-                    cpu_stack.push(OP);
-                    cpu_stack.push(RX);
-                    PC++;
-                }
-                else if (program[PC] == "OUT")
-                {
-                    std::cout << cpu_stack.top() << std::endl;
-                    cpu_stack.pop();
-                    PC++;
-                }
-                else if (program[PC] == "IN")
-                {
-                    T in;
-                    std::cin >> in;
-                    cpu_stack.push(in);
-                    PC++;
-                }
-                else if (program[PC] == "JMP")
-                {
-                    PC++;
-                    bool not_found = true;
-                    for (int i = 0; i < labels_count; i++)
-                    {
-                        if (program[PC] == labels[i])
-                        {
-                            PC = label_ind[i];
-                            not_found = false;
-                            break;
-                        }
-                    }
-                    if (not_found)
-                    {
-                        std::cerr << "Error: label is not fount" << std::endl;
-                        exit(EXIT_FAILURE);
-                    }
-                }
-                else if (program[PC] == "JEQ")
-                {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    if (OP == cpu_stack.top())
-                    {
-                        PC++;
-                        bool not_found = true;
-                        for (int i = 0; i < labels_count; i++)
-                        {
-                            if (program[PC] == labels[i])
-                            {
-                                PC = label_ind[i];
-                                not_found = false;
-                                break;
-                            }
-                        }
-                        if (not_found)
-                        {
-                            std::cerr << "Error: label is not fount" << std::endl;
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                        PC++;
-                    cpu_stack.push(OP);
-                }
-                else if (program[PC] == "JNE")
-                {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    if (OP != cpu_stack.top())
-                    {
-                        PC++;
-                        bool not_found = true;
-                        for (int i = 0; i < labels_count; i++)
-                        {
-                            if (program[PC] == labels[i])
-                            {
-                                PC = label_ind[i];
-                                not_found = false;
-                                break;
-                            }
-                        }
-                        if (not_found)
-                        {
-                            std::cerr << "Error: label is not fount" << std::endl;
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                        PC++;
-                    cpu_stack.push(OP);
-                }
-                else if (program[PC] == "JA")
-                {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    if (OP > cpu_stack.top())
-                    {
-                        PC++;
-                        bool not_found = true;
-                        for (int i = 0; i < labels_count; i++)
-                        {
-                            if (program[PC] == labels[i])
-                            {
-                                PC = label_ind[i];
-                                not_found = false;
-                                break;
-                            }
-                        }
-                        if (not_found)
-                        {
-                            std::cerr << "Error: label is not fount" << std::endl;
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                        PC++;
-                    cpu_stack.push(OP);
-                }
-                else if (program[PC] == "JAE")
-                {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    if (OP >= cpu_stack.top())
-                    {
-                        PC++;
-                        bool not_found = true;
-                        for (int i = 0; i < labels_count; i++)
-                        {
-                            if (program[PC] == labels[i])
-                            {
-                                PC = label_ind[i];
-                                not_found = false;
-                                break;
-                            }
-                        }
-                        if (not_found)
-                        {
-                            std::cerr << "Error: label is not fount" << std::endl;
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                        PC++;
-                    cpu_stack.push(OP);
-                }
-                else if (program[PC] == "JB")
-                {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    if (OP < cpu_stack.top())
-                    {
-                        PC++;
-                        bool not_found = true;
-                        for (int i = 0; i < labels_count; i++)
-                        {
-                            if (program[PC] == labels[i])
-                            {
-                                PC = label_ind[i];
-                                not_found = false;
-                                break;
-                            }
-                        }
-                        if (not_found)
-                        {
-                            std::cerr << "Error: label is not fount" << std::endl;
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                        PC++;
-                    cpu_stack.push(OP);
-                }
-                else if (program[PC] == "JBE")
-                {
-                    OP = cpu_stack.top();
-                    cpu_stack.pop();
-                    if (OP <= cpu_stack.top())
-                    {
-                        PC++;
-                        bool not_found = true;
-                        for (int i = 0; i < labels_count; i++)
-                        {
-                            if (program[PC] == labels[i])
-                            {
-                                PC = label_ind[i];
-                                not_found = false;
-                                break;
-                            }
-                        }
-                        if (not_found)
-                        {
-                            std::cerr << "Error: label is not fount" << std::endl;
-                            exit(EXIT_FAILURE);
-                        }
-                    }
-                    else
-                        PC++;
-                    cpu_stack.push(OP);
-                }
-                else if (program[PC] == "CALL")
-                {
-                    PC++;
-                    bool not_found = true;
-                    for (int i = 0; i < labels_count; i++)
-                    {
-                        if (program[PC] == labels[i])
-                        {
-                            program[PC].push_back('@');
-
-                            labels.push_back(program[PC]);
-                            label_ind.push_back(PC + 1);
-                            labels_count++;
-
-                            func.push(program[PC]);
-                            PC = label_ind[i];
-
-                            BP = cpu_stack.get_len();
-
-                            not_found = false;
-                            break;
-                        }
-                    }
-                    if (not_found)
-                    {
-                        std::cerr << "Error: label is not fount" << std::endl;
-                        exit(EXIT_FAILURE);
-                    }
-                }
-                else if (program[PC] == "RET")
-                {
-                    for (int i = 0; i < labels_count; i++)
-                    {
-                        if (func.top() == labels[i])
-                        {
-                            PC = label_ind[i];
-                            func.pop();
-                            if (cpu_stack.get_len() > BP)
-                                cpu_stack.set_len(BP);
-                            break;
-                        }
-                    }
+                    RET<T> command;
+                    command.run(mem, PC);
                 }
                 else
                 {
@@ -629,24 +300,6 @@ namespace CPULib
         }
 
     private:
-        stack<T> cpu_stack;
-        std::vector<std::string> program;
-        std::vector<std::string> labels;
-        std::vector<int> label_ind;
-        int labels_count = 0;
-        stack<std::string> func;
-        // Registers
-        T AX;
-        bool AX_e = true;
-        T BX;
-        bool BX_e = true;
-        T CX;
-        bool CX_e = true;
-        T DX;
-        bool DX_e = true;
-        T OP; // Operation register
-        T RX; // Result register
-        int PC = -1; // Program Counter register
-        int BP = 0; // Base Pointer register
+        memory<T> mem;
     };
 }

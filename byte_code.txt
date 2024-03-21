@@ -1,0 +1,22 @@
+1 - programs        2 - args (values, regs, labels)
+11 - BEGIN
+12 - END
+13 - PUSH
+14 - POP
+15 - PUSHR
+16 - POPR
+17 - ADD
+18 - SUB
+19 - MUL
+110 - DIV
+111 - OUT
+112 - IN
+113 - JMP
+114 - JEQ
+115 - JNE
+116 - JA
+117 - JAE
+118 - JB
+119 - JBE
+120 - CALL
+121 - RET
